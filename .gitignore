@@ -2,4 +2,4 @@
 reports/*
 *.DS_Store
 *.pyc
-env/*
+venv/*
