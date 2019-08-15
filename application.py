@@ -1,6 +1,11 @@
 import os
+import re
+import shutil
+import datetime
+from zipfile import ZipFile
 
 # web stuff
+import requests
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc, desc
 from flask import Flask, flash, redirect, render_template, request, session, url_for, send_file
@@ -11,15 +16,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from seleniumrequests import Chrome
-from zipfile import ZipFile
 from celery import Celery
-import shutil
 
-import datetime
-import requests
-import re
-
-from helpers import apology, tf_login, getMemberGroups, getMembers, getGenres, getSourcePerf, getPromoPerf, get_all_file_paths
+from helpers import apology, tf_login, getMemberGroups, getMembers, getGenres, getSourcePerf, getPromoPerf, get_all_file_paths, org_exists
 
 # Configure application
 app = Flask(__name__)
@@ -88,8 +87,6 @@ def query():
     options["promoStart"] = request.form.get("promoStart")
     options["promoEnd"] = request.form.get("promoEnd")
 
-    # print(orgID, memberListCheck, memberGroupsCheck, genreListCheck, sourceCheck, promoCheck, sourceStart, sourceEnd, promoStart, promoEnd)
-
     cur_dir = os.getcwd()
     chromedriver_location = cur_dir + "/chromedriver"
 
@@ -98,15 +95,41 @@ def query():
     db.session.add(new_request)
     db.session.commit()
 
+    # form validation - somple
+    if not options["memberListCheck"] and not options["memberGroupsCheck"] and not options["genreListCheck"] and not options["sourceCheck"] and not options["promoCheck"]:
+        return apology("Select at least one report")
+    if options["sourceCheck"]:
+        if not options["sourceStart"] or not options["sourceEnd"]:
+            return apology("Date box unfilled")
+    if options["promoCheck"]:
+        if not options["promoStart"] or not options["promoEnd"]:
+            return apology("Date box unfilled")
+
+    # form validation - web stuff
+    cur_dir = os.getcwd()
+    chromedriver_location = cur_dir + "/chromedriver"
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    driver = Chrome(chrome_options=chrome_options, executable_path=chromedriver_location)
+    login_result = tf_login(driver, tf_user, tf_pwd)
+    if not login_result:
+        return apology("Incorrect username / password")
+    org_result = org_exists(driver, orgID)
+    if not org_result:
+        return apology("Invalid Organization ID")
+    driver.quit()
+
     # process request
     db.session.refresh(new_request)
     task = processing.delay(orgID, tf_user, tf_pwd, options, new_request.id)
 
-    flash('Done!')
+    flash('Queued!')
     return render_template("main.html", tf_user=tf_user, tf_pwd=tf_pwd)
 
 @celery.task(name='tfly.collect')
 def processing(orgID, tf_user, tf_pwd, options, request_id):
+    # gets request object
+    new_request = Request.query.filter_by(id=request_id).first()
     cur_dir = os.getcwd()
     chromedriver_location = cur_dir + "/chromedriver"
     chrome_options = Options()
@@ -115,24 +138,46 @@ def processing(orgID, tf_user, tf_pwd, options, request_id):
 
     tf_login(driver, tf_user, tf_pwd)
     if options["memberListCheck"]:
-        getMemberGroups(driver, orgID)
+        result = getMembers(driver, orgID)
+        if not result:
+            new_request.status = "Error with member groups"
+            db.session.commit()
+            driver.quit()
+            return False
     if options["memberGroupsCheck"]:
-        getMembers(driver, orgID)
+        result = getMemberGroups(driver, orgID)
+        if not result:
+            new_request.status = "Error with member list"
+            db.session.commit()
+            driver.quit()
+            return False
     if options["genreListCheck"]:
-        getGenres(driver, orgID)
+        result = getGenres(driver, orgID)
+        if not result:
+            new_request.status = "Error with genre report"
+            db.session.commit()
+            driver.quit()
+            return False
     if options["sourceCheck"]:
-        getSourcePerf(driver, orgID, sourceStart, sourceEnd)
+        result = getSourcePerf(driver, orgID, options["sourceStart"], options["sourceEnd"])
+        if not result:
+            new_request.status = "Error with source report"
+            db.session.commit()
+            driver.quit()
+            return False
     if options["promoCheck"]:
-        getPromoPerf(driver, orgID, promoStart, promoEnd)
+        result = getPromoPerf(driver, orgID, options["promoStart"], options["promoEnd"])
+        if not result:
+            new_request.status = "Error with promotion report"
+            db.session.commit()
+            driver.quit()
+            return False
 
     driver.quit()
 
     # creates a zip then deletes the folder
     directory = "reports/" + orgID
     file_paths = get_all_file_paths(directory)
-
-    # gets request object
-    new_request = Request.query.filter_by(id=request_id).first()
 
     # zips file
     filename = orgID + "_" + str(new_request.id) + ".zip"
