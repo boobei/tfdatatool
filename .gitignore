@@ -4,3 +4,4 @@ reports/*
 *.pyc
 venv/*
 *.rdb
+*.ignore
