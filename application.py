@@ -12,10 +12,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from seleniumrequests import Chrome
 
-from zipfile import ZipFile
 import datetime
 import requests
-import shutil
 import re
 
 from helpers import apology, tf_login, getMemberGroups, getMembers, getGenres, getSourcePerf, getPromoPerf, get_all_file_paths, processing
