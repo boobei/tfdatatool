@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Queue
+{% endblock %}
+
+{% block main %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Organization ID</th>
+                <th>Time</th>
+                <th>Requestee</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+            {% for query in queries %}
+                <tr>
+                    <td>{{ query.orgID }}</td>
+                    <td>{{ query.time }} </td>
+                    <td>{{ query.username }}</td>
+                    {% if query.status == "Done" %}
+                    <td>
+                      <form action="/download" method="post">
+                          <input type="hidden" name="filename" value="{{ query.filename }}"/>
+                          <button class="btn btn-sm btn-primary" type="submit">Download</button>
+                      </form>
+                    </td>
+                    {% else %}
+                    <td>{{ query.status }}</td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

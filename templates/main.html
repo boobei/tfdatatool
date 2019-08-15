@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Main
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid" style="max-width:800px">
+  <form class="form-horizontal" action="/query" method="post">
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <label class="control-label">TF Login</label>
+      </div>
+      <div class="col-sm-3">
+        <input class="form-control" type="email" name="tf_user" placeholder="TF Email" value="{{tf_user}}">
+      </div>
+      <div class="col-sm-3">
+        <input class="form-control" type="password" name="tf_pwd" placeholder="TF Password" value="{{tf_pwd}}">
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <label class="control-label">Org ID:</label>
+      </div>
+      <div class="col-sm-3">
+  	    <input class="form-control" type="text" name="orgID">
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <input type="checkbox" name="memberListCheck">
+        <label class="control-label">Member List</label>
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <input type="checkbox" name="memberGroupsCheck">
+        <label class="control-label">Member Groups</label>
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <input type="checkbox" name="genreListCheck">
+        <label class="control-label">Genre Lists</label>
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <input type="checkbox" name="sourceCheck">
+        <label class="control-label">Org-Level Source Performance Report</label>
+      </div>
+      <div class="col-sm-3">
+        <input class="form-control" type="text" name="sourceStart" placeholder="Start">
+      </div>
+      <div class="col-sm-3">
+        <input class="form-control" type="text" name="sourceEnd" placeholder="End">
+      </div>
+    </div>
+
+    <div class="form-group row">
+      <div class="col-md-12">
+        <input type="checkbox" name="promoCheck">
+        <label class="control-label">Org-Level Promotion Performance Report</label>
+      </div>
+      <div class="col-sm-3">
+        <input class="form-control" type="text" name="promoStart" placeholder="Start">
+      </div>
+      <div class="col-sm-3">
+        <input class="form-control" type="text" name="promoEnd" placeholder="End">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-8">
+        <button class="btn btn-default btn-primary" type="submit">Queue Reports</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
