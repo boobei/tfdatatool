@@ -11,15 +11,19 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from seleniumrequests import Chrome
+from zipfile import ZipFile
+from celery import Celery
+import shutil
 
 import datetime
 import requests
 import re
 
-from helpers import apology, tf_login, getMemberGroups, getMembers, getGenres, getSourcePerf, getPromoPerf, get_all_file_paths, processing
+from helpers import apology, tf_login, getMemberGroups, getMembers, getGenres, getSourcePerf, getPromoPerf, get_all_file_paths
 
 # Configure application
 app = Flask(__name__)
+celery = Celery(broker='redis://localhost:6379/0')
 
 # Ensure responses aren't cached
 @app.after_request
@@ -95,11 +99,51 @@ def query():
     db.session.commit()
 
     # process request
-    processing(db, orgID, tf_user, tf_pwd, options, new_request)
+    db.session.refresh(new_request)
+    task = processing.delay(orgID, tf_user, tf_pwd, options, new_request.id)
 
     flash('Done!')
     return render_template("main.html", tf_user=tf_user, tf_pwd=tf_pwd)
 
+@celery.task(name='tfly.collect')
+def processing(orgID, tf_user, tf_pwd, options, request_id):
+    cur_dir = os.getcwd()
+    chromedriver_location = cur_dir + "/chromedriver"
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    driver = Chrome(chrome_options=chrome_options, executable_path=chromedriver_location)
+
+    tf_login(driver, tf_user, tf_pwd)
+    if options["memberListCheck"]:
+        getMemberGroups(driver, orgID)
+    if options["memberGroupsCheck"]:
+        getMembers(driver, orgID)
+    if options["genreListCheck"]:
+        getGenres(driver, orgID)
+    if options["sourceCheck"]:
+        getSourcePerf(driver, orgID, sourceStart, sourceEnd)
+    if options["promoCheck"]:
+        getPromoPerf(driver, orgID, promoStart, promoEnd)
+
+    driver.quit()
+
+    # creates a zip then deletes the folder
+    directory = "reports/" + orgID
+    file_paths = get_all_file_paths(directory)
+
+    # gets request object
+    new_request = Request.query.filter_by(id=request_id).first()
+
+    # zips file
+    filename = orgID + "_" + str(new_request.id) + ".zip"
+    with ZipFile("reports/" + filename , 'w') as zip:
+        for file in file_paths:
+            zip.write(file)
+    shutil.rmtree("reports/" + orgID)
+
+    new_request.filename = filename
+    new_request.status = "Done"
+    db.session.commit()
 
 def errorhandler(e):
     """Handle error"""
