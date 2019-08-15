@@ -1,3 +1,4 @@
 # ignore everything in reports
 reports/*
 *.DS_Store
+*.pyc
