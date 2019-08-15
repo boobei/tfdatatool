@@ -97,21 +97,7 @@ def query():
     db.session.commit()
 
     # process request
-    processing(driver, tf_user, tf_pwd, options, chromedriver_location)
-
-    # creates a zip then deletes the folder
-    directory = "reports/" + orgID
-    file_paths = get_all_file_paths(directory)
-    db.session.refresh(new_request)
-    filename = orgID + "_" + str(new_request.id) + ".zip"
-    with ZipFile("reports/" + filename , 'w') as zip:
-        for file in file_paths:
-            zip.write(file)
-    shutil.rmtree("reports/" + orgID)
-
-    new_request.filename = filename
-    new_request.status = "Done"
-    db.session.commit()
+    processing(db, orgID, tf_user, tf_pwd, options, new_request)
 
     flash('Done!')
     return render_template("main.html", tf_user=tf_user, tf_pwd=tf_pwd)

@@ -10,8 +10,11 @@ import datetime as dt
 from datetime import datetime
 
 from flask import redirect, render_template, request, session
+from zipfile import ZipFile
 from functools import wraps
 from celery import Celery
+import shutil
+
 celery = Celery(broker='redis://localhost:6379/0')
 
 def createPath(path):
@@ -148,7 +151,13 @@ def getPromoPerf(driver, orgID, start, end):
         new_file.write(req.content)
 
 @celery.task(name='tfly.collect')
-def processing(db, orgID, tf_user, tf_pwd, options, chromedriver_location, req):
+def processing(db, orgID, tf_user, tf_pwd, options, new_request):
+    cur_dir = os.getcwd()
+    chromedriver_location = cur_dir + "/chromedriver"
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    driver = Chrome(chrome_options=chrome_options, executable_path=chromedriver_location)
+
     tf_login(driver, tf_user, tf_pwd)
     if options["memberListCheck"]:
         getMemberGroups(driver, orgID)
@@ -160,8 +169,19 @@ def processing(db, orgID, tf_user, tf_pwd, options, chromedriver_location, req):
         getSourcePerf(driver, orgID, sourceStart, sourceEnd)
     if options["promoCheck"]:
         getPromoPerf(driver, orgID, promoStart, promoEnd)
+
     driver.quit()
 
-    req.filename = filename
-    req.status = "Done"
+    # creates a zip then deletes the folder
+    directory = "reports/" + orgID
+    file_paths = get_all_file_paths(directory)
+    db.session.refresh(new_request)
+    filename = orgID + "_" + str(new_request.id) + ".zip"
+    with ZipFile("reports/" + filename , 'w') as zip:
+        for file in file_paths:
+            zip.write(file)
+    shutil.rmtree("reports/" + orgID)
+
+    new_request.filename = filename
+    new_request.status = "Done"
     db.session.commit()
