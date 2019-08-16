@@ -1,5 +1,6 @@
 import os
 import re
+import yaml
 import shutil
 import datetime
 from zipfile import ZipFile
@@ -19,10 +20,23 @@ from seleniumrequests import Chrome
 from celery import Celery
 
 from helpers import apology, tf_login, getMemberGroups, getMembers, getGenres, getSourcePerf, getPromoPerf, get_all_file_paths, org_exists
+from flask_celery import make_celery
 
-# Configure application
 app = Flask(__name__)
-celery = Celery(broker='redis://localhost:6379/0')
+# Configure session to use filesystem (instead of signed cookies)
+project_dir = os.path.dirname(os.path.abspath(__file__))
+database_file = "sqlite:///{}".format(os.path.join(project_dir, "ebtool.db"))
+chromedriver_file = os.path.join(project_dir, "chromedriver")
+app.config["CELERY_BROKER_URL"] = "redis://localhost:6379/0"
+app.config["CELERY_RESULT_BACKEND"] = "redis://localhost:6379/0"
+app.config["SESSION_FILE_DIR"] = mkdtemp()
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SQLALCHEMY_DATABASE_URI"] = database_file
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["CHROMEDRIVER_URI"] = chromedriver_file
+
+celery = make_celery(app)
 
 # Ensure responses aren't cached
 @app.after_request
@@ -33,16 +47,8 @@ def after_request(response):
     return response
 
 # Configure library to use SQLite database
-project_dir = os.path.dirname(os.path.abspath(__file__))
-database_file = "sqlite:///{}".format(os.path.join(project_dir, "ebtool.db"))
 db = SQLAlchemy(app)
 
-# Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_FILE_DIR"] = mkdtemp()
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SQLALCHEMY_DATABASE_URI"] = database_file
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 Session(app)
 
 class Request(db.Model):
@@ -87,13 +93,8 @@ def query():
     options["promoStart"] = request.form.get("promoStart")
     options["promoEnd"] = request.form.get("promoEnd")
 
-    cur_dir = os.getcwd()
-    chromedriver_location = cur_dir + "/chromedriver"
-
     time = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     new_request = Request(orgID=orgID, username=tf_user, status="Processing", time=time)
-    db.session.add(new_request)
-    db.session.commit()
 
     # form validation - somple
     if not options["memberListCheck"] and not options["memberGroupsCheck"] and not options["genreListCheck"] and not options["sourceCheck"] and not options["promoCheck"]:
@@ -106,11 +107,9 @@ def query():
             return apology("Date box unfilled")
 
     # form validation - web stuff
-    cur_dir = os.getcwd()
-    chromedriver_location = cur_dir + "/chromedriver"
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    driver = Chrome(chrome_options=chrome_options, executable_path=chromedriver_location)
+    driver = Chrome(chrome_options=chrome_options, executable_path=app.config["CHROMEDRIVER_URI"])
     login_result = tf_login(driver, tf_user, tf_pwd)
     if not login_result:
         return apology("Incorrect username / password")
@@ -120,6 +119,8 @@ def query():
     driver.quit()
 
     # process request
+    db.session.add(new_request)
+    db.session.commit()
     db.session.refresh(new_request)
     task = processing.delay(orgID, tf_user, tf_pwd, options, new_request.id)
 
@@ -130,11 +131,10 @@ def query():
 def processing(orgID, tf_user, tf_pwd, options, request_id):
     # gets request object
     new_request = Request.query.filter_by(id=request_id).first()
-    cur_dir = os.getcwd()
-    chromedriver_location = cur_dir + "/chromedriver"
+
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    driver = Chrome(chrome_options=chrome_options, executable_path=chromedriver_location)
+    driver = Chrome(chrome_options=chrome_options, executable_path=app.config["CHROMEDRIVER_URI"])
 
     tf_login(driver, tf_user, tf_pwd)
     if options["memberListCheck"]:
@@ -193,3 +193,6 @@ def processing(orgID, tf_user, tf_pwd, options, request_id):
 def errorhandler(e):
     """Handle error"""
     return apology(e.name, e.code)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0')

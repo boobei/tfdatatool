@@ -72,10 +72,20 @@
         <label class="control-label">Org-Level Source Performance Report</label>
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="sourceStart" placeholder="Start" value="{{sourceStart}}">
+        <input class="form-control" id="datepicker1" type="text" name="sourceStart" placeholder="Start" value="{{sourceStart}}">
+        <script>
+          $('#datepicker1').datepicker({
+              uiLibrary: 'bootstrap'
+          });
+        </script>
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="sourceEnd" placeholder="End" value="{{sourceEnd}}">
+        <input class="form-control" id="datepicker2" type="text" name="sourceEnd" placeholder="End" value="{{sourceEnd}}">
+        <script>
+          $('#datepicker2').datepicker({
+              uiLibrary: 'bootstrap'
+          });
+        </script>
       </div>
     </div>
 
@@ -89,10 +99,20 @@
         <label class="control-label">Org-Level Promotion Performance Report</label>
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="promoStart" placeholder="Start" value="{{promoStart}}">
+        <input class="form-control" id="datepicker3" type="text" name="promoStart" placeholder="Start" value="{{promoStart}}">
+        <script>
+          $('#datepicker3').datepicker({
+              uiLibrary: 'bootstrap'
+          });
+        </script>
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="promoEnd" placeholder="End" value={{promoEnd}}>
+        <input class="form-control" id="datepicker4" type="text" name="promoEnd" placeholder="End" value={{promoEnd}}>
+        <script>
+          $('#datepicker4').datepicker({
+              uiLibrary: 'bootstrap'
+          });
+        </script>
       </div>
     </div>
 
