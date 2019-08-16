@@ -31,48 +31,68 @@
 
     <div class="form-group row">
       <div class="col-md-12">
+        {% if memberListCheck %}
+        <input type="checkbox" checked name="memberListCheck">
+        {% else %}
         <input type="checkbox" name="memberListCheck">
+        {% endif %}
         <label class="control-label">Member List</label>
       </div>
     </div>
 
     <div class="form-group row">
       <div class="col-md-12">
+        {% if memberGroupsCheck %}
+        <input type="checkbox" checked name="memberGroupsCheck">
+        {% else %}
         <input type="checkbox" name="memberGroupsCheck">
+        {% endif %}
         <label class="control-label">Member Groups</label>
       </div>
     </div>
 
     <div class="form-group row">
       <div class="col-md-12">
+        {% if genreListCheck %}
+        <input type="checkbox" checked name="genreListCheck">
+        {% else %}
         <input type="checkbox" name="genreListCheck">
+        {% endif %}
         <label class="control-label">Genre Lists</label>
       </div>
     </div>
 
     <div class="form-group row">
       <div class="col-md-12">
+        {% if sourceCheck %}
+        <input type="checkbox" checked name="sourceCheck">
+        {% else %}
         <input type="checkbox" name="sourceCheck">
+        {% endif %}
         <label class="control-label">Org-Level Source Performance Report</label>
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="sourceStart" placeholder="Start">
+        <input class="form-control" type="text" name="sourceStart" placeholder="Start" value="{{sourceStart}}">
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="sourceEnd" placeholder="End">
+        <input class="form-control" type="text" name="sourceEnd" placeholder="End" value="{{sourceEnd}}">
       </div>
     </div>
 
     <div class="form-group row">
       <div class="col-md-12">
+        {% if promoCheck %}
+        <input type="checkbox" checked name="promoCheck">
+        {% else %}
         <input type="checkbox" name="promoCheck">
+        {% endif %}
         <label class="control-label">Org-Level Promotion Performance Report</label>
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="promoStart" placeholder="Start">
+        <input class="form-control" type="text" name="promoStart" placeholder="Start" value="{{promoStart}}">
       </div>
       <div class="col-sm-3">
-        <input class="form-control" type="text" name="promoEnd" placeholder="End">
+        <input class="form-control" type="text" name="promoEnd" placeholder="End" value={{promoEnd}}>
       </div>
     </div>
 

@@ -124,7 +124,7 @@ def query():
     task = processing.delay(orgID, tf_user, tf_pwd, options, new_request.id)
 
     flash('Queued!')
-    return render_template("main.html", tf_user=tf_user, tf_pwd=tf_pwd)
+    return render_template("main.html", tf_user=tf_user, tf_pwd=tf_pwd, memberListCheck = options["memberListCheck"], memberGroupsCheck = options["memberGroupsCheck"], genreListCheck=options["genreListCheck"], sourceCheck=options["sourceCheck"], promoCheck=options["promoCheck"], sourceStart=options["sourceStart"], sourceEnd=options["sourceEnd"], promoStart=options["promoStart"], promoEnd=options["promoEnd"])
 
 @celery.task(name='tfly.collect')
 def processing(orgID, tf_user, tf_pwd, options, request_id):
